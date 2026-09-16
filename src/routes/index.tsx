@@ -13,7 +13,12 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-import { tailorResume } from "@/lib/tailor.functions";
+import {
+  tailorResume,
+  extractKeywords,
+  buildLatexResume,
+  scoreResume,
+} from "@/lib/tailor.functions";
 import { Markdown } from "@/components/Markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,13 +31,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Upload your resume, paste a job description, and get an ATS-friendly resume rewritten for that exact role in seconds.",
+          "Upload your resume, paste a job description, and get ATS keywords, a one-page LaTeX resume and a match score out of 100.",
       },
       { property: "og:title", content: "Resume Tailor — Match your resume to any job" },
       {
         property: "og:description",
         content:
-          "Upload your resume, paste a job description, and get an ATS-friendly tailored resume in seconds.",
+          "ATS keywords, a single-column LaTeX resume and a match score out of 100 — from your resume and one job description.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -42,11 +47,22 @@ export const Route = createFileRoute("/")({
 });
 
 const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_ROUNDS = 4;
+const TARGET_SCORE = 95;
 
-type TailorInput = {
-  jobDescription: string;
-  resumeText?: string;
-  resumeFile?: { name: string; mimeType: string; base64: string };
+type Breakdown = {
+  keywordCoverage: number;
+  relevance: number;
+  impact: number;
+  atsClarity: number;
+};
+
+type Round = {
+  round: number;
+  score: number;
+  breakdown: Breakdown;
+  missingKeywords: string[];
+  improvements: string[];
 };
 
 function splitTailoredResult(markdown: string) {
@@ -59,19 +75,35 @@ function splitTailoredResult(markdown: string) {
   return { resume: beforeHeading, notes };
 }
 
+function downloadText(text: string, filename: string, mime: string) {
+  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function Home() {
   const tailor = useServerFn(tailorResume);
+  const getKeywords = useServerFn(extractKeywords);
+  const getLatex = useServerFn(buildLatexResume);
+  const getScore = useServerFn(scoreResume);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [file, setFile] = useState<{ name: string; mimeType: string; base64: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: (vars: TailorInput) => tailor({ data: vars }),
-  });
-
+  const [stage, setStage] = useState<string | null>(null);
+  const [resume, setResume] = useState<string | null>(null);
+  const [tailoringNotes, setTailoringNotes] = useState<string>("");
+  const [keywords, setKeywords] = useState<string>("");
+  const [latex, setLatex] = useState<string>("");
+  const [rounds, setRounds] = useState<Round[]>([]);
 
   async function handleFile(picked: File | undefined) {
     if (!picked) return;
@@ -105,38 +137,89 @@ function Home() {
     setResumeText("");
   }
 
-  const ready = (file !== null || resumeText.trim().length > 50) && jobDescription.trim().length > 20;
-  const result = mutation.data?.markdown;
-  const separatedResult = result ? splitTailoredResult(result) : null;
-  const resume = separatedResult?.resume;
-  const tailoringNotes = separatedResult?.notes;
+  const mutation = useMutation({
+    mutationFn: async () => {
+      setStage("Tailoring your resume…");
+      setResume(null);
+      setTailoringNotes("");
+      setKeywords("");
+      setLatex("");
+      setRounds([]);
 
-  function submit() {
-    setNotice(null);
-    mutation.mutate({
-      jobDescription,
-      ...(resumeText.trim() ? { resumeText } : {}),
-      ...(file ? { resumeFile: file } : {}),
-    });
+      const tailored = await tailor({
+        data: {
+          jobDescription,
+          ...(resumeText.trim() ? { resumeText } : {}),
+          ...(file ? { resumeFile: file } : {}),
+        },
+      });
+      const split = splitTailoredResult(tailored.markdown);
+      setResume(split.resume);
+      setTailoringNotes(split.notes);
+
+      setStage("Extracting ATS keywords…");
+      const kw = await getKeywords({ data: { jobDescription } });
+      setKeywords(kw.keywords);
+
+      setStage("Building the LaTeX resume…");
+      let current = (
+        await getLatex({
+          data: {
+            jobDescription,
+            resumeSource: split.resume,
+            keywords: kw.keywords,
+          },
+        })
+      ).latex;
+      setLatex(current);
+
+      const collected: Round[] = [];
+      let best = { latex: current, score: -1 };
+
+      for (let round = 1; round <= MAX_ROUNDS; round++) {
+        setStage(`Scoring round ${round}…`);
+        const result = await getScore({
+          data: { jobDescription, latex: current, keywords: kw.keywords },
+        });
+        collected.push({ round, ...result });
+        setRounds([...collected]);
+        if (result.score > best.score) best = { latex: current, score: result.score };
+        if (result.score >= TARGET_SCORE || round === MAX_ROUNDS) break;
+
+        setStage(`Applying improvements (round ${round})…`);
+        current = (
+          await getLatex({
+            data: {
+              jobDescription,
+              resumeSource: split.resume,
+              keywords: kw.keywords,
+              previousLatex: current,
+              improvements: result.improvements,
+            },
+          })
+        ).latex;
+        setLatex(current);
+      }
+
+      setLatex(best.latex);
+      setStage(null);
+      return true;
+    },
+    onError: () => setStage(null),
+  });
+
+  const ready =
+    (file !== null || resumeText.trim().length > 50) && jobDescription.trim().length > 20;
+  const latest = rounds.length ? rounds[rounds.length - 1] : null;
+
+  async function copy(text: string, key: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
   }
 
-  function download() {
-    if (!resume) return;
-    const blob = new Blob([resume], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "tailored-resume.md";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function copy() {
-    if (!resume) return;
-    await navigator.clipboard.writeText(resume);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
+  const actionClass =
+    "rounded-none border-2 bg-transparent font-body uppercase shadow-none hover:bg-primary hover:text-primary-foreground";
 
   return (
     <main className="min-h-screen bg-background p-3 text-foreground sm:p-6 lg:p-10">
@@ -189,9 +272,10 @@ function Home() {
           <div className="mt-8">
             {notice && <p className="mb-3 border-l-2 border-border pl-3 font-body text-xs uppercase">{notice}</p>}
             {mutation.isError && <p className="mb-3 border-l-2 border-destructive pl-3 font-body text-xs text-destructive">{(mutation.error as Error).message || "Something went wrong. Please try again."}</p>}
-            <Button size="lg" disabled={!ready || mutation.isPending} onClick={submit} className="h-auto w-full rounded-none border-2 border-border py-7 font-display text-xl uppercase shadow-none hover:bg-card hover:text-foreground sm:text-2xl">
-              {mutation.isPending ? <><Loader2 className="animate-spin" /> Tailoring resume...</> : <><FileText /> Process & tailor</>}
+            <Button size="lg" disabled={!ready || mutation.isPending} onClick={() => mutation.mutate()} className="h-auto w-full rounded-none border-2 border-border py-7 font-display text-xl uppercase shadow-none hover:bg-card hover:text-foreground sm:text-2xl">
+              {mutation.isPending ? <><Loader2 className="animate-spin" /> Working…</> : <><FileText /> Process & tailor</>}
             </Button>
+            {stage && <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em]">{stage}</p>}
             {!ready && <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Resume + job description required</p>}
           </div>
         </section>
@@ -203,9 +287,9 @@ function Home() {
               <h2 className="mt-2 text-3xl uppercase sm:text-4xl">Revised draft</h2>
             </div>
             {resume && <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => void copy()} className="rounded-none border-2 bg-transparent font-body uppercase shadow-none hover:bg-primary hover:text-primary-foreground"><Copy /> {copied ? "Copied" : "Copy"}</Button>
-              <Button variant="outline" size="sm" onClick={download} className="rounded-none border-2 bg-transparent font-body uppercase shadow-none hover:bg-primary hover:text-primary-foreground"><Download /> Download</Button>
-              <Button variant="outline" size="sm" onClick={() => window.print()} className="rounded-none border-2 bg-transparent font-body uppercase shadow-none hover:bg-primary hover:text-primary-foreground"><Printer /> Print</Button>
+              <Button variant="outline" size="sm" onClick={() => void copy(resume, "resume")} className={actionClass}><Copy /> {copied === "resume" ? "Copied" : "Copy"}</Button>
+              <Button variant="outline" size="sm" onClick={() => downloadText(resume, "tailored-resume.md", "text/markdown")} className={actionClass}><Download /> Download</Button>
+              <Button variant="outline" size="sm" onClick={() => window.print()} className={actionClass}><Printer /> Print</Button>
             </div>}
           </div>
 
@@ -229,6 +313,64 @@ function Home() {
                 <p className="mt-4 font-body text-xs uppercase tracking-[0.16em] text-muted-foreground">Your tailored resume will appear here</p>
               </div>
             </div>
+          )}
+
+          {keywords && (
+            <section className="print-notes mt-8 border-t-2 border-border pt-6">
+              <div className="mb-3 flex flex-wrap items-end gap-3">
+                <p className="industrial-label mr-auto">05 // ATS keywords</p>
+                <Button variant="outline" size="sm" onClick={() => void copy(keywords, "keywords")} className={actionClass}><Copy /> {copied === "keywords" ? "Copied" : "Copy"}</Button>
+              </div>
+              <p className="border-2 border-border bg-card p-4 font-body text-sm leading-relaxed">{keywords}</p>
+            </section>
+          )}
+
+          {latex && (
+            <section className="print-notes mt-8 border-t-2 border-border pt-6">
+              <div className="mb-3 flex flex-wrap items-end gap-3">
+                <p className="industrial-label mr-auto">06 // LaTeX resume (single column, ATS)</p>
+                <Button variant="outline" size="sm" onClick={() => void copy(latex, "latex")} className={actionClass}><Copy /> {copied === "latex" ? "Copied" : "Copy"}</Button>
+                <Button variant="outline" size="sm" onClick={() => downloadText(latex, "resume.tex", "application/x-tex")} className={actionClass}><Download /> .tex</Button>
+              </div>
+              <pre className="max-h-96 overflow-auto border-2 border-border bg-card p-4 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">{latex}</pre>
+              <p className="mt-2 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Paste into Overleaf and compile with pdfLaTeX</p>
+            </section>
+          )}
+
+          {latest && (
+            <section className="print-notes mt-8 border-t-2 border-border pt-6">
+              <p className="industrial-label">07 // Match score</p>
+              <div className="mt-3 flex flex-wrap items-end gap-6 border-2 border-border bg-card p-5">
+                <p className="font-display text-6xl leading-none">{latest.score}<span className="text-2xl">/100</span></p>
+                <ul className="font-body text-xs uppercase tracking-[0.1em]">
+                  <li>Keywords {latest.breakdown.keywordCoverage}/30</li>
+                  <li>Relevance {latest.breakdown.relevance}/30</li>
+                  <li>Impact {latest.breakdown.impact}/20</li>
+                  <li>ATS clarity {latest.breakdown.atsClarity}/20</li>
+                </ul>
+                {rounds.length > 1 && (
+                  <p className="ml-auto font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                    Rounds: {rounds.map((r) => r.score).join(" → ")}
+                  </p>
+                )}
+              </div>
+
+              {latest.improvements.length > 0 && (
+                <div className="mt-4">
+                  <p className="font-body text-xs font-bold uppercase tracking-[0.12em]">Improvements still worth making</p>
+                  <ul className="mt-2 list-disc space-y-1 border-l-2 border-border pl-6 font-body text-sm">
+                    {latest.improvements.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              {latest.missingKeywords.length > 0 && (
+                <div className="mt-4">
+                  <p className="font-body text-xs font-bold uppercase tracking-[0.12em]">Keywords to add only if true for you</p>
+                  <p className="mt-2 border-l-2 border-border pl-6 font-body text-sm">{latest.missingKeywords.join(", ")}</p>
+                </div>
+              )}
+            </section>
           )}
 
           <footer className="mt-6 flex justify-between gap-4 font-body text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
