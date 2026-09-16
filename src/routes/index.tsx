@@ -2,7 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { FileText, Upload, Sparkles, Copy, Download, Printer, Loader2 } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  Sparkles,
+  Copy,
+  Download,
+  Printer,
+  Loader2,
+  Info,
+  ChevronDown,
+} from "lucide-react";
 
 import { tailorResume } from "@/lib/tailor.functions";
 import { Markdown } from "@/components/Markdown";
@@ -39,6 +49,16 @@ type TailorInput = {
   resumeText?: string;
   resumeFile?: { name: string; mimeType: string; base64: string };
 };
+
+function splitTailoredResult(markdown: string) {
+  const notesHeading = /^## How this was tailored\s*$/m;
+  const match = notesHeading.exec(markdown);
+  if (!match) return { resume: markdown.trim(), notes: "" };
+
+  const beforeHeading = markdown.slice(0, match.index).replace(/\n---\s*$/, "").trim();
+  const notes = markdown.slice(match.index).trim();
+  return { resume: beforeHeading, notes };
+}
 
 function Home() {
   const tailor = useServerFn(tailorResume);
@@ -88,6 +108,9 @@ function Home() {
 
   const ready = (file !== null || resumeText.trim().length > 50) && jobDescription.trim().length > 20;
   const result = mutation.data?.markdown;
+  const separatedResult = result ? splitTailoredResult(result) : null;
+  const resume = separatedResult?.resume;
+  const tailoringNotes = separatedResult?.notes;
 
   function submit() {
     setNotice(null);
@@ -99,8 +122,8 @@ function Home() {
   }
 
   function download() {
-    if (!result) return;
-    const blob = new Blob([result], { type: "text/markdown;charset=utf-8" });
+    if (!resume) return;
+    const blob = new Blob([resume], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -110,8 +133,8 @@ function Home() {
   }
 
   async function copy() {
-    if (!result) return;
-    await navigator.clipboard.writeText(result);
+    if (!resume) return;
+    await navigator.clipboard.writeText(resume);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -203,7 +226,7 @@ function Home() {
         </div>
       </section>
 
-      {result && (
+      {resume && (
         <section className="mx-auto max-w-5xl px-6 pb-20">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <h2 className="mr-auto text-2xl">Your tailored resume</h2>
@@ -218,8 +241,20 @@ function Home() {
             </Button>
           </div>
           <article className="resume-doc rounded-xl border border-border bg-card p-8 shadow-card md:p-12">
-            <Markdown source={result} />
+            <Markdown source={resume} />
           </article>
+          {tailoringNotes && (
+            <details className="group mt-6 border-t border-border pt-5">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-foreground marker:hidden">
+                <Info className="h-4 w-4 text-primary" />
+                Why these changes?
+                <ChevronDown className="ml-1 h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="tailoring-notes mt-4 border-l-2 border-border pl-5 text-sm text-muted-foreground">
+                <Markdown source={tailoringNotes} />
+              </div>
+            </details>
+          )}
         </section>
       )}
     </main>
