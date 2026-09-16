@@ -231,10 +231,10 @@ const SCORE_SCHEMA = {
 export const scoreResume = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ScoreInput.parse(input))
   .handler(async ({ data }) => {
-    const { callAstra } = await import("./ai-gateway.server");
+    const { callModel } = await import("./ai-provider.server");
 
-    const raw = await callAstra({
-      effort: "low",
+    const raw = await callModel({
+      engine: data.engine,
       system: `You are a strict technical recruiter scoring one resume against one job description.
 Rate each of these four dimensions from 0 to 100: keyword coverage, role relevance, demonstrated impact and metrics, ATS-safe clarity and formatting.
 The overall score out of 100 is the weighted average: keyword coverage 30%, relevance 30%, impact 20%, ATS clarity 20%.
