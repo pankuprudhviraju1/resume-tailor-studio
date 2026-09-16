@@ -275,7 +275,8 @@ export const scoreResume = createServerFn({ method: "POST" })
     const raw = await callAstra({
       effort: "low",
       system: `You are a strict technical recruiter scoring one resume against one job description.
-Score out of 100 across keyword coverage (0-30), role relevance (0-30), demonstrated impact and metrics (0-20) and ATS-safe clarity and formatting (0-20); the overall score is their sum.
+Rate each of these four dimensions from 0 to 100: keyword coverage, role relevance, demonstrated impact and metrics, ATS-safe clarity and formatting.
+The overall score out of 100 is the weighted average: keyword coverage 30%, relevance 30%, impact 20%, ATS clarity 20%.
 Then list 3-7 specific improvements that could be applied WITHOUT inventing employers, degrees, dates or metrics. If the resume already covers something, do not ask for it again.
 Return JSON only.`,
       input: `JOB DESCRIPTION:\n${data.jobDescription}\n\nTARGET ATS KEYWORDS:\n${data.keywords}\n\nRESUME (LaTeX source):\n${data.latex}\n\nScore it now.`,
@@ -303,10 +304,10 @@ Return JSON only.`,
     return {
       score: clamp(parsed.score, 100),
       breakdown: {
-        keywordCoverage: clamp(parsed.keyword_coverage, 30),
-        relevance: clamp(parsed.relevance, 30),
-        impact: clamp(parsed.impact, 20),
-        atsClarity: clamp(parsed.ats_clarity, 20),
+        keywordCoverage: clamp(parsed.keyword_coverage, 100),
+        relevance: clamp(parsed.relevance, 100),
+        impact: clamp(parsed.impact, 100),
+        atsClarity: clamp(parsed.ats_clarity, 100),
       },
       missingKeywords: (parsed.missing_keywords ?? []).filter((k) => typeof k === "string").slice(0, 20),
       improvements: (parsed.improvements ?? []).filter((i) => typeof i === "string").slice(0, 8),
