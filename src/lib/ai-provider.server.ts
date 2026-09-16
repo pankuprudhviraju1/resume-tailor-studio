@@ -9,8 +9,8 @@
 export type Engine = {
   provider: "openai" | "gemini" | "ollama";
   model: string;
-  apiKey?: string;
-  baseUrl?: string;
+  apiKey?: string | undefined;
+  baseUrl?: string | undefined;
 };
 
 export type AttachedFile = {
