@@ -34,6 +34,12 @@ export const Route = createFileRoute("/")({
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
+type TailorInput = {
+  jobDescription: string;
+  resumeText?: string;
+  resumeFile?: { name: string; mimeType: string; base64: string };
+};
+
 function Home() {
   const tailor = useServerFn(tailorResume);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,8 +50,9 @@ function Home() {
   const [copied, setCopied] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: (vars: Parameters<typeof tailorResume>[0]["data"]) => tailor({ data: vars }),
+    mutationFn: (vars: TailorInput) => tailor({ data: vars }),
   });
+
 
   async function handleFile(picked: File | undefined) {
     if (!picked) return;
