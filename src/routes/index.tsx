@@ -20,6 +20,8 @@ import {
   scoreResume,
 } from "@/lib/tailor.functions";
 import { Markdown } from "@/components/Markdown";
+import { EngineSetup } from "@/components/EngineSetup";
+import { useEngine, isEngineReady } from "@/hooks/useEngine";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
