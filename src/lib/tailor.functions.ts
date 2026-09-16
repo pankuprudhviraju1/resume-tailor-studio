@@ -134,6 +134,7 @@ Rules:
 /* ------------------------------------------------------------------ */
 
 const LatexInput = z.object({
+  engine: EngineSchema,
   jobDescription: z.string().min(20),
   resumeSource: z.string().min(50),
   keywords: z.string().default(""),
