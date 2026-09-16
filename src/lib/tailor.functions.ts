@@ -1,7 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+export const EngineSchema = z.object({
+  provider: z.enum(["openai", "gemini", "ollama"]),
+  model: z.string().min(1, "Please choose a model."),
+  apiKey: z.string().optional(),
+  baseUrl: z.string().optional(),
+});
+
+export type EngineConfig = z.infer<typeof EngineSchema>;
+
 const Input = z.object({
+  engine: EngineSchema,
   jobDescription: z.string().min(20, "Please paste a longer job description."),
   resumeText: z.string().optional(),
   resumeFile: z
@@ -12,10 +22,6 @@ const Input = z.object({
     })
     .optional(),
 });
-
-type ContentBlock =
-  | { type: "text"; text: string }
-  | { type: "file"; file: { filename: string; file_data: string } };
 
 const SYSTEM_PROMPT = `You are an expert technical recruiter and resume writer.
 You rewrite a candidate's existing resume so it is tailored to one specific job description.
