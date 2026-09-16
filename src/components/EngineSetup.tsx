@@ -58,7 +58,11 @@ export function EngineSetup(props: {
     setStatus("testing");
     setMessage(null);
     try {
-      await runTest({ data: { engine: draft } });
+      if (draft.provider === "ollama") {
+        await localRunner.test(draft);
+      } else {
+        await runTest({ data: { engine: draft } });
+      }
       props.onSave(draft);
       setStatus("ok");
       setMessage("Connected. Your engine is saved in this browser only.");
