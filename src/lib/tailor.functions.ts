@@ -25,12 +25,12 @@ Hard rules:
 - You may rephrase, reorder, re-group and emphasise real experience, and mirror the vocabulary of the job description.
 - Keep it ATS-friendly: plain section headings, no tables, no columns, no graphics.
 - Produce a strict one-page resume, regardless of the source resume's length.
-- Keep the resume itself between 450 and 650 words. The tailoring notes after the divider do not count.
+- Keep the resume itself between 350 and 500 words. The tailoring notes after the divider do not count.
 - Preserve the candidate's valuable work. Never omit a project from the source resume, and do not silently remove unique achievements, roles, education, certifications or skills.
 - Compress instead of deleting: remove repeated wording and generic duties, merge overlapping evidence, and shorten lower-relevance material to one concise line.
-- Use a two-line summary, a compact comma-separated skills section, and no more than 10 experience bullets in total.
+- Use one compact 2-3 sentence summary, a single compact comma-separated skills section, and no more than 8 experience bullets in total.
 - Represent every role from the source. Give the most relevant roles 2-3 concise bullets; list older or less relevant roles as compact one-line entries when space is tight. Keep every bullet to one line where practical.
-- Always include a Projects section when the source contains projects. Include every source project: give the most relevant projects up to 2 concise impact bullets and compress each remaining project to one strong line. Never invent project details.
+- Always include a Projects section when the source contains projects. Include every source project: use one strong line per project, adding a second line only for the single most relevant project when essential. Never invent project details.
 - Keep Education and Certifications compact, with one line per item.
 - Use strong action verbs and preserve the candidate's strongest supported outcomes and metrics.
 - Before answering, compare the draft against the source and ensure every source project is named and every distinct, valuable accomplishment is represented somewhere.
