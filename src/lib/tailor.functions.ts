@@ -172,7 +172,7 @@ function stripFences(text: string) {
 export const buildLatexResume = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => LatexInput.parse(input))
   .handler(async ({ data }) => {
-    const { callAstra } = await import("./ai-gateway.server");
+    const { callModel } = await import("./ai-provider.server");
 
     const revision =
       data.previousLatex && data.improvements?.length
@@ -181,8 +181,8 @@ export const buildLatexResume = createServerFn({ method: "POST" })
             .join("\n")}`
         : "";
 
-    const latex = await callAstra({
-      effort: "medium",
+    const latex = await callModel({
+      engine: data.engine,
       system: LATEX_SYSTEM,
       input: `JOB DESCRIPTION:\n${data.jobDescription}\n\nATS KEYWORDS TO COVER WHERE TRUTHFUL:\n${data.keywords}\n\nCANDIDATE RESUME SOURCE:\n${data.resumeSource}${revision}\n\nReturn the complete LaTeX resume now.`,
     });
