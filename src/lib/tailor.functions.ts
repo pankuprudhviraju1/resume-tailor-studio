@@ -253,8 +253,10 @@ Return JSON only.`,
       missing_keywords?: string[];
       improvements?: string[];
     };
+    // Some local models wrap JSON in prose or code fences.
+    const jsonText = (raw.match(/\{[\s\S]*\}/) ?? [raw])[0];
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(jsonText);
     } catch {
       throw new Error("The AI returned an unreadable score. Please try again.");
     }
