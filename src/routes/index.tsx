@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 import {
   FileText,
   Upload,
-  Sparkles,
   Copy,
   Download,
   Printer,
@@ -140,123 +139,103 @@ function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="bg-hero text-primary-foreground">
-        <div className="mx-auto max-w-5xl px-6 py-16 md:py-20">
-          <p className="flex items-center gap-2 text-sm font-medium uppercase tracking-[0.18em] opacity-80">
-            <Sparkles className="h-4 w-4" /> Resume Tailor
-          </p>
-          <h1 className="mt-4 max-w-3xl text-4xl leading-tight md:text-5xl">
-            One resume in, a role-specific resume out.
-          </h1>
-          <p className="mt-4 max-w-2xl text-base opacity-85">
-            Add your current resume and the job description you are targeting. You get back an
-            ATS-friendly rewrite that mirrors the language of the role — using only the experience
-            you already have.
-          </p>
-        </div>
-      </header>
+    <main className="min-h-screen bg-background p-3 text-foreground sm:p-6 lg:p-10">
+      <div className="industrial-frame mx-auto grid min-h-[calc(100vh-5rem)] max-w-[90rem] bg-card lg:grid-cols-[44%_56%]">
+        <section className="app-input-panel flex flex-col border-b-[3px] border-border p-5 sm:p-8 lg:border-r-[3px] lg:border-b-0 lg:p-10">
+          <header className="mb-12 flex items-start justify-between gap-4">
+            <h1 className="text-[clamp(3.5rem,8vw,7.5rem)] leading-[0.82] uppercase">
+              Resume<br />Tailor
+            </h1>
+            <span className="font-body text-[10px] font-bold uppercase tracking-[0.16em]">AI / 01</span>
+          </header>
 
-      <section className="mx-auto grid max-w-5xl gap-6 px-6 py-12 md:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
-          <Label className="text-sm font-semibold">1. Your current resume</Label>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="mt-3 flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-secondary/60 px-4 py-8 text-center transition-colors hover:border-ring hover:bg-secondary"
-          >
-            <Upload className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm font-medium">
-              {file ? file.name : "Choose a PDF or text file"}
-            </span>
-            <span className="text-xs text-muted-foreground">PDF, TXT or MD · up to 8 MB</span>
-          </button>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".pdf,.txt,.md,application/pdf,text/plain"
-            className="hidden"
-            onChange={(e) => void handleFile(e.target.files?.[0])}
-          />
-          <p className="mt-4 text-xs text-muted-foreground">Or paste your resume text instead:</p>
-          <Textarea
-            value={resumeText}
-            onChange={(e) => {
-              setResumeText(e.target.value);
-              if (e.target.value.trim()) setFile(null);
-            }}
-            placeholder="Name, contact details, experience, skills, education…"
-            className="mt-2 min-h-40 font-body"
-          />
-        </div>
+          <div className="flex-1 space-y-8">
+            <div>
+              <Label className="industrial-label">01 // Source file</Label>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => inputRef.current?.click()}
+                className="mt-2 h-auto min-h-28 w-full rounded-none border-2 border-dashed border-border bg-transparent px-4 py-7 font-body uppercase shadow-none hover:bg-primary hover:text-primary-foreground"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="max-w-full truncate text-xs font-bold sm:text-sm">
+                  {file ? file.name : "Choose PDF or text file"}
+                </span>
+              </Button>
+              <input ref={inputRef} type="file" accept=".pdf,.txt,.md,application/pdf,text/plain" className="hidden" onChange={(e) => void handleFile(e.target.files?.[0])} />
+              <p className="mt-2 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">PDF, TXT or MD // Max 8 MB</p>
+            </div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
-          <Label className="text-sm font-semibold">2. The job description</Label>
-          <Textarea
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            placeholder="Paste the full job posting: responsibilities, requirements, tech stack…"
-            className="mt-3 min-h-[19.5rem]"
-          />
-        </div>
+            <div>
+              <Label className="industrial-label">02 // Resume text alternative</Label>
+              <Textarea
+                value={resumeText}
+                onChange={(e) => {
+                  setResumeText(e.target.value);
+                  if (e.target.value.trim()) setFile(null);
+                }}
+                placeholder="Paste resume text here..."
+                className="industrial-textarea mt-2 min-h-36"
+              />
+            </div>
 
-        <div className="md:col-span-2">
-          {notice && <p className="mb-3 text-sm text-muted-foreground">{notice}</p>}
-          {mutation.isError && (
-            <p className="mb-3 text-sm text-destructive">
-              {(mutation.error as Error).message || "Something went wrong. Please try again."}
-            </p>
-          )}
-          <Button size="lg" disabled={!ready || mutation.isPending} onClick={submit}>
-            {mutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Tailoring your resume…
-              </>
-            ) : (
-              <>
-                <FileText className="h-4 w-4" /> Generate tailored resume
-              </>
-            )}
-          </Button>
-          {!ready && (
-            <span className="ml-3 text-sm text-muted-foreground">
-              Add a resume and a job description to continue.
-            </span>
-          )}
-        </div>
-      </section>
-
-      {resume && (
-        <section className="print-result mx-auto max-w-5xl px-6 pb-20">
-          <div className="print-result-actions mb-4 flex flex-wrap items-center gap-2">
-            <h2 className="mr-auto text-2xl">Your tailored resume</h2>
-            <Button variant="outline" size="sm" onClick={() => void copy()}>
-              <Copy className="h-4 w-4" /> {copied ? "Copied" : "Copy"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={download}>
-              <Download className="h-4 w-4" /> Download
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="h-4 w-4" /> Print / PDF
-            </Button>
+            <div>
+              <Label className="industrial-label">03 // Target job description</Label>
+              <Textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="Paste full job requirements here..." className="industrial-textarea mt-2 min-h-56" />
+            </div>
           </div>
-          <article className="resume-doc rounded-xl border border-border bg-card p-8 shadow-card md:p-12">
-            <Markdown source={resume} />
-          </article>
-          {tailoringNotes && (
-            <details className="print-notes group mt-6 border-t border-border pt-5">
-              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-foreground marker:hidden">
-                <Info className="h-4 w-4 text-primary" />
-                Why these changes?
-                <ChevronDown className="ml-1 h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="tailoring-notes mt-4 border-l-2 border-border pl-5 text-sm text-muted-foreground">
-                <Markdown source={tailoringNotes} />
-              </div>
-            </details>
-          )}
+
+          <div className="mt-8">
+            {notice && <p className="mb-3 border-l-2 border-border pl-3 font-body text-xs uppercase">{notice}</p>}
+            {mutation.isError && <p className="mb-3 border-l-2 border-destructive pl-3 font-body text-xs text-destructive">{(mutation.error as Error).message || "Something went wrong. Please try again."}</p>}
+            <Button size="lg" disabled={!ready || mutation.isPending} onClick={submit} className="h-auto w-full rounded-none border-2 border-border py-7 font-display text-xl uppercase shadow-none hover:bg-card hover:text-foreground sm:text-2xl">
+              {mutation.isPending ? <><Loader2 className="animate-spin" /> Tailoring resume...</> : <><FileText /> Process & tailor</>}
+            </Button>
+            {!ready && <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Resume + job description required</p>}
+          </div>
         </section>
-      )}
+
+        <section className="output-panel flex min-h-[46rem] flex-col bg-secondary p-5 sm:p-8 lg:p-10">
+          <div className="print-result-actions mb-7 flex flex-wrap items-end gap-4 border-b-2 border-border pb-5">
+            <div className="mr-auto">
+              <p className="industrial-label">04 // Tailored output</p>
+              <h2 className="mt-2 text-3xl uppercase sm:text-4xl">Revised draft</h2>
+            </div>
+            {resume && <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => void copy()} className="rounded-none border-2 bg-transparent font-body uppercase shadow-none hover:bg-primary hover:text-primary-foreground"><Copy /> {copied ? "Copied" : "Copy"}</Button>
+              <Button variant="outline" size="sm" onClick={download} className="rounded-none border-2 bg-transparent font-body uppercase shadow-none hover:bg-primary hover:text-primary-foreground"><Download /> Download</Button>
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="rounded-none border-2 bg-transparent font-body uppercase shadow-none hover:bg-primary hover:text-primary-foreground"><Printer /> Print</Button>
+            </div>}
+          </div>
+
+          {resume ? (
+            <section className="print-result flex flex-1 flex-col">
+              <article className="resume-doc flex-1 border-2 border-border bg-card p-6 sm:p-9">
+                <Markdown source={resume} />
+              </article>
+              {tailoringNotes && <details className="print-notes group mt-6 border-t-2 border-border pt-4">
+                <summary className="flex cursor-pointer list-none items-center gap-2 font-body text-xs font-bold uppercase tracking-[0.12em] marker:hidden">
+                  <Info className="h-4 w-4" /> Why these changes?
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="tailoring-notes mt-4 border-l-2 border-border pl-4 font-body text-sm"><Markdown source={tailoringNotes} /></div>
+              </details>}
+            </section>
+          ) : (
+            <div className="flex flex-1 items-center justify-center border-2 border-border bg-card p-8 text-center">
+              <div>
+                <p className="font-display text-5xl uppercase sm:text-7xl">No draft</p>
+                <p className="mt-4 font-body text-xs uppercase tracking-[0.16em] text-muted-foreground">Your tailored resume will appear here</p>
+              </div>
+            </div>
+          )}
+
+          <footer className="mt-6 flex justify-between gap-4 font-body text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+            <span>ATS format</span><span>One page target</span><span>Source faithful</span>
+          </footer>
+        </section>
+      </div>
     </main>
   );
 }
