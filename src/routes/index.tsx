@@ -290,7 +290,13 @@ function Home() {
               {mutation.isPending ? <><Loader2 className="animate-spin" /> Working…</> : <><FileText /> Process & tailor</>}
             </Button>
             {stage && <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em]">{stage}</p>}
-            {!ready && <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Resume + job description required</p>}
+            {!ready && (
+              <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                {isEngineReady(engine)
+                  ? "Resume + job description required"
+                  : "Set up your AI engine above first"}
+              </p>
+            )}
           </div>
         </section>
 
