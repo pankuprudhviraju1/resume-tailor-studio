@@ -245,6 +245,8 @@ function Home() {
           </header>
 
           <div className="flex-1 space-y-8">
+            <EngineSetup engine={engine} onSave={saveEngine} onClear={clearEngine} />
+
             <div>
               <Label className="industrial-label">01 // Source file</Label>
               <Button
