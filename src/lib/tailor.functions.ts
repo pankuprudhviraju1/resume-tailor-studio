@@ -1,7 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+export const EngineSchema = z.object({
+  provider: z.enum(["openai", "gemini", "ollama"]),
+  model: z.string().min(1, "Please choose a model."),
+  apiKey: z.string().optional(),
+  baseUrl: z.string().optional(),
+});
+
+export type EngineConfig = z.infer<typeof EngineSchema>;
+
 const Input = z.object({
+  engine: EngineSchema,
   jobDescription: z.string().min(20, "Please paste a longer job description."),
   resumeText: z.string().optional(),
   resumeFile: z
@@ -12,10 +22,6 @@ const Input = z.object({
     })
     .optional(),
 });
-
-type ContentBlock =
-  | { type: "text"; text: string }
-  | { type: "file"; file: { filename: string; file_data: string } };
 
 const SYSTEM_PROMPT = `You are an expert technical recruiter and resume writer.
 You rewrite a candidate's existing resume so it is tailored to one specific job description.
@@ -55,87 +61,39 @@ After the resume, add:
 export const tailorResume = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env["LOVABLE_API_KEY"];
-    if (!apiKey) {
-      throw new Error("AI is not configured for this app (missing LOVABLE_API_KEY).");
-    }
+    const { callModel } = await import("./ai-provider.server");
     if (!data.resumeFile && !(data.resumeText && data.resumeText.trim().length > 50)) {
       throw new Error("Please upload a resume file or paste your resume text.");
     }
 
-    const blocks: ContentBlock[] = [
-      {
-        type: "text",
-        text: `JOB DESCRIPTION:\n${data.jobDescription}\n\n${
-          data.resumeText && data.resumeText.trim()
-            ? `CANDIDATE RESUME (text):\n${data.resumeText}`
-            : "The candidate resume is attached as a file."
-        }\n\nWrite the tailored resume now.`,
-      },
-    ];
+    const markdown = await callModel({
+      engine: data.engine,
+      system: SYSTEM_PROMPT,
+      input: `JOB DESCRIPTION:\n${data.jobDescription}\n\n${
+        data.resumeText && data.resumeText.trim()
+          ? `CANDIDATE RESUME (text):\n${data.resumeText}`
+          : "The candidate resume is attached as a file."
+      }\n\nWrite the tailored resume now.`,
+      ...(data.resumeFile ? { files: [data.resumeFile] } : {}),
+    });
 
-    if (data.resumeFile) {
-      blocks.push({
-        type: "file",
-        file: {
-          filename: data.resumeFile.name,
-          file_data: `data:${data.resumeFile.mimeType};base64,${data.resumeFile.base64}`,
-        },
-      });
-    }
+    return { markdown };
+  });
 
-    const callGateway = () =>
-      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Lovable-API-Key": apiKey,
-          "X-Lovable-AIG-SDK": "fetch",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3.8-flash",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: blocks },
-          ],
-        }),
-      });
+/* ------------------------------------------------------------------ */
+/* Engine connection test                                             */
+/* ------------------------------------------------------------------ */
 
-    let res = await callGateway();
-    // 429 and 5xx are transient: retry with bounded backoff before giving up.
-    for (let attempt = 1; attempt <= 3 && (res.status === 429 || res.status >= 500); attempt++) {
-      const retryAfter = Number(res.headers.get("retry-after"));
-      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
-        ? Math.min(retryAfter * 1000, 8000)
-        : attempt * 1500 + Math.random() * 500;
-      await new Promise((r) => setTimeout(r, waitMs));
-      res = await callGateway();
-    }
-
-    if (!res.ok) {
-      const detail = await res.text();
-      if (res.status === 429) {
-        throw new Error("Too many requests right now — please try again in a minute.");
-      }
-      if (res.status === 402) {
-        throw new Error("The AI credits for this app have run out. Please top them up.");
-      }
-      if (res.status >= 500) {
-        throw new Error("The AI service is temporarily unavailable. Please try again in a moment.");
-      }
-      console.error("AI gateway error", res.status, detail);
-      throw new Error(`Could not generate the resume (error ${res.status}). ${detail.slice(0, 300)}`);
-    }
-
-
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = json.choices?.[0]?.message?.content?.trim();
-    if (!content) {
-      throw new Error("The AI returned an empty response. Please try again.");
-    }
-    return { markdown: content };
+export const testEngine = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ engine: EngineSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const { callModel } = await import("./ai-provider.server");
+    const reply = await callModel({
+      engine: data.engine,
+      system: "You are a connection test. Reply with the single word OK.",
+      input: "Reply with OK.",
+    });
+    return { ok: true, reply: reply.slice(0, 80) };
   });
 
 /* ------------------------------------------------------------------ */
@@ -143,15 +101,16 @@ export const tailorResume = createServerFn({ method: "POST" })
 /* ------------------------------------------------------------------ */
 
 const KeywordInput = z.object({
+  engine: EngineSchema,
   jobDescription: z.string().min(20, "Please paste a longer job description."),
 });
 
 export const extractKeywords = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => KeywordInput.parse(input))
   .handler(async ({ data }) => {
-    const { callAstra } = await import("./ai-gateway.server");
-    const keywords = await callAstra({
-      effort: "low",
+    const { callModel } = await import("./ai-provider.server");
+    const keywords = await callModel({
+      engine: data.engine,
       system: `You list the keywords an ATS and a human recruiter would scan a candidate's resume for, given one job description.
 Rules:
 - Include hard skills, tools, technologies, methodologies, domain terms, certifications and the exact job titles implied by the posting.
@@ -175,6 +134,7 @@ Rules:
 /* ------------------------------------------------------------------ */
 
 const LatexInput = z.object({
+  engine: EngineSchema,
   jobDescription: z.string().min(20),
   resumeSource: z.string().min(50),
   keywords: z.string().default(""),
@@ -212,7 +172,7 @@ function stripFences(text: string) {
 export const buildLatexResume = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => LatexInput.parse(input))
   .handler(async ({ data }) => {
-    const { callAstra } = await import("./ai-gateway.server");
+    const { callModel } = await import("./ai-provider.server");
 
     const revision =
       data.previousLatex && data.improvements?.length
@@ -221,8 +181,8 @@ export const buildLatexResume = createServerFn({ method: "POST" })
             .join("\n")}`
         : "";
 
-    const latex = await callAstra({
-      effort: "medium",
+    const latex = await callModel({
+      engine: data.engine,
       system: LATEX_SYSTEM,
       input: `JOB DESCRIPTION:\n${data.jobDescription}\n\nATS KEYWORDS TO COVER WHERE TRUTHFUL:\n${data.keywords}\n\nCANDIDATE RESUME SOURCE:\n${data.resumeSource}${revision}\n\nReturn the complete LaTeX resume now.`,
     });
@@ -235,6 +195,7 @@ export const buildLatexResume = createServerFn({ method: "POST" })
 /* ------------------------------------------------------------------ */
 
 const ScoreInput = z.object({
+  engine: EngineSchema,
   jobDescription: z.string().min(20),
   latex: z.string().min(50),
   keywords: z.string().default(""),
@@ -270,10 +231,10 @@ const SCORE_SCHEMA = {
 export const scoreResume = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ScoreInput.parse(input))
   .handler(async ({ data }) => {
-    const { callAstra } = await import("./ai-gateway.server");
+    const { callModel } = await import("./ai-provider.server");
 
-    const raw = await callAstra({
-      effort: "low",
+    const raw = await callModel({
+      engine: data.engine,
       system: `You are a strict technical recruiter scoring one resume against one job description.
 Rate each of these four dimensions from 0 to 100: keyword coverage, role relevance, demonstrated impact and metrics, ATS-safe clarity and formatting.
 The overall score out of 100 is the weighted average: keyword coverage 30%, relevance 30%, impact 20%, ATS clarity 20%.
@@ -292,8 +253,10 @@ Return JSON only.`,
       missing_keywords?: string[];
       improvements?: string[];
     };
+    // Some local models wrap JSON in prose or code fences.
+    const jsonText = (raw.match(/\{[\s\S]*\}/) ?? [raw])[0];
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(jsonText);
     } catch {
       throw new Error("The AI returned an unreadable score. Please try again.");
     }

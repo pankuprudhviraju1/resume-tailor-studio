@@ -20,6 +20,8 @@ import {
   scoreResume,
 } from "@/lib/tailor.functions";
 import { Markdown } from "@/components/Markdown";
+import { EngineSetup } from "@/components/EngineSetup";
+import { useEngine, isEngineReady } from "@/hooks/useEngine";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -90,6 +92,8 @@ function Home() {
   const getKeywords = useServerFn(extractKeywords);
   const getLatex = useServerFn(buildLatexResume);
   const getScore = useServerFn(scoreResume);
+  const { engine, save: saveEngine, clear: clearEngine } = useEngine();
+
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [jobDescription, setJobDescription] = useState("");
@@ -139,6 +143,9 @@ function Home() {
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (!isEngineReady(engine)) {
+        throw new Error("Set up your AI engine first.");
+      }
       setStage("Tailoring your resume…");
       setResume(null);
       setTailoringNotes("");
@@ -148,6 +155,7 @@ function Home() {
 
       const tailored = await tailor({
         data: {
+          engine,
           jobDescription,
           ...(resumeText.trim() ? { resumeText } : {}),
           ...(file ? { resumeFile: file } : {}),
@@ -158,13 +166,14 @@ function Home() {
       setTailoringNotes(split.notes);
 
       setStage("Extracting ATS keywords…");
-      const kw = await getKeywords({ data: { jobDescription } });
+      const kw = await getKeywords({ data: { engine, jobDescription } });
       setKeywords(kw.keywords);
 
       setStage("Building the LaTeX resume…");
       let current = (
         await getLatex({
           data: {
+            engine,
             jobDescription,
             resumeSource: split.resume,
             keywords: kw.keywords,
@@ -179,7 +188,7 @@ function Home() {
       for (let round = 1; round <= MAX_ROUNDS; round++) {
         setStage(`Scoring round ${round}…`);
         const result = await getScore({
-          data: { jobDescription, latex: current, keywords: kw.keywords },
+          data: { engine, jobDescription, latex: current, keywords: kw.keywords },
         });
         collected.push({ round, ...result });
         setRounds([...collected]);
@@ -190,6 +199,7 @@ function Home() {
         current = (
           await getLatex({
             data: {
+              engine,
               jobDescription,
               resumeSource: split.resume,
               keywords: kw.keywords,
@@ -209,7 +219,9 @@ function Home() {
   });
 
   const ready =
-    (file !== null || resumeText.trim().length > 50) && jobDescription.trim().length > 20;
+    isEngineReady(engine) &&
+    (file !== null || resumeText.trim().length > 50) &&
+    jobDescription.trim().length > 20;
   const latest = rounds.length ? rounds[rounds.length - 1] : null;
 
   async function copy(text: string, key: string) {
@@ -233,6 +245,8 @@ function Home() {
           </header>
 
           <div className="flex-1 space-y-8">
+            <EngineSetup engine={engine} onSave={saveEngine} onClear={clearEngine} />
+
             <div>
               <Label className="industrial-label">01 // Source file</Label>
               <Button
@@ -276,7 +290,13 @@ function Home() {
               {mutation.isPending ? <><Loader2 className="animate-spin" /> Working…</> : <><FileText /> Process & tailor</>}
             </Button>
             {stage && <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em]">{stage}</p>}
-            {!ready && <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Resume + job description required</p>}
+            {!ready && (
+              <p className="mt-3 font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                {isEngineReady(engine)
+                  ? "Resume + job description required"
+                  : "Set up your AI engine above first"}
+              </p>
+            )}
           </div>
         </section>
 
