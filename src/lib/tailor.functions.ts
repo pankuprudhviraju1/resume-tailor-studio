@@ -25,28 +25,30 @@ Hard rules:
 - You may rephrase, reorder, re-group and emphasise real experience, and mirror the vocabulary of the job description.
 - Keep it ATS-friendly: plain section headings, no tables, no columns, no graphics.
 - Produce a strict one-page resume, regardless of the source resume's length.
-- Keep the resume itself between 400 and 550 words. The tailoring notes after the divider do not count.
-- Prioritise only evidence that directly supports this role; remove repetition, generic duties and low-relevance details.
-- Use a two-line summary, a compact comma-separated skills section, and no more than 10 experience bullets in total.
-- Include at most 4 relevant roles with 2-3 concise bullets each. Keep every bullet to one line where practical.
-- Include at most one highly relevant project. Omit Projects entirely when experience already proves the same skills.
+- Keep the resume itself between 350 and 500 words. The tailoring notes after the divider do not count.
+- Preserve the candidate's valuable work. Never omit a project from the source resume, and do not silently remove unique achievements, roles, education, certifications or skills.
+- Compress instead of deleting: remove repeated wording and generic duties, merge overlapping evidence, and shorten lower-relevance material to one concise line.
+- Use one compact 2-3 sentence summary, a single compact comma-separated skills section, and no more than 8 experience bullets in total.
+- Represent every role from the source. Give the most relevant roles 2-3 concise bullets; list older or less relevant roles as compact one-line entries when space is tight. Keep every bullet to one line where practical.
+- Always include a Projects section when the source contains projects. Include every source project: use one strong line per project, adding a second line only for the single most relevant project when essential. Never invent project details.
 - Keep Education and Certifications compact, with one line per item.
 - Use strong action verbs and preserve the candidate's strongest supported outcomes and metrics.
+- Before answering, compare the draft against the source and ensure every source project is named and every distinct, valuable accomplishment is represented somewhere.
 
 Return GitHub-flavoured Markdown only, in this order:
 # Full Name
 Contact line (email | phone | location | links) — only details present in the source resume.
 ## Professional Summary  (2 concise lines, targeted at the role)
 ## Core Skills  (grouped, comma separated, prioritising skills the job asks for)
-## Experience  (up to 4 relevant roles; company — title — dates, then 2-3 achievement bullets)
-## Projects  (at most one; only when both relevant and present in the source)
+## Experience  (every source role; company — title — dates, with detail weighted toward relevance)
+## Projects  (every source project; concise entries weighted toward relevance)
 ## Education  (one line per item)
 ## Certifications  (only if relevant and present; one line per item)
 
 After the resume, add:
 ---
 ## How this was tailored
-- 4-6 short bullets on what you emphasised and why.
+- 4-6 short bullets on what you emphasised or compressed and why. Never claim that source projects or valuable work were removed.
 ## Keywords from the job description you should verify
 - Any required skills the resume does not evidence, so the candidate can add them if true.`;
 

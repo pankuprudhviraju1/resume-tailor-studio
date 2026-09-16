@@ -240,47 +240,48 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 9mm 11mm;
+    margin: 7mm 9mm;
   }
 
-  body * {
-    visibility: hidden;
+  main > header,
+  main > section:not(.print-result),
+  .print-result-actions,
+  .print-notes {
+    display: none;
   }
-  .resume-doc,
-  .resume-doc * {
-    visibility: visible;
+  .print-result {
+    max-width: none;
+    padding: 0;
   }
   .resume-doc {
-    position: absolute;
-    inset: 0;
     padding: 0;
     border: 0;
     box-shadow: none;
-    font-size: 9pt;
-    line-height: 1.25;
+    font-size: 8.25pt;
+    line-height: 1.18;
   }
   .resume-doc h1 {
-    font-size: 18pt;
+    font-size: 16pt;
     line-height: 1.1;
   }
   .resume-doc h2 {
-    margin-top: 8pt;
-    padding-bottom: 2pt;
-    font-size: 8pt;
+    margin-top: 5pt;
+    padding-bottom: 1.5pt;
+    font-size: 7.5pt;
   }
   .resume-doc h3 {
-    margin-top: 5pt;
-    font-size: 9.5pt;
+    margin-top: 3.5pt;
+    font-size: 8.75pt;
   }
   .resume-doc p,
   .resume-doc ul {
-    margin-top: 3pt;
+    margin-top: 2pt;
   }
   .resume-doc li {
-    margin-top: 1.5pt;
-    line-height: 1.25;
+    margin-top: 1pt;
+    line-height: 1.18;
   }
   .resume-doc hr {
-    margin: 7pt 0;
+    margin: 4pt 0;
   }
 }

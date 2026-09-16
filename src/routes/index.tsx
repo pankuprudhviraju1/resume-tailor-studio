@@ -227,8 +227,8 @@ function Home() {
       </section>
 
       {resume && (
-        <section className="mx-auto max-w-5xl px-6 pb-20">
-          <div className="mb-4 flex flex-wrap items-center gap-2">
+        <section className="print-result mx-auto max-w-5xl px-6 pb-20">
+          <div className="print-result-actions mb-4 flex flex-wrap items-center gap-2">
             <h2 className="mr-auto text-2xl">Your tailored resume</h2>
             <Button variant="outline" size="sm" onClick={() => void copy()}>
               <Copy className="h-4 w-4" /> {copied ? "Copied" : "Copy"}
@@ -244,7 +244,7 @@ function Home() {
             <Markdown source={resume} />
           </article>
           {tailoringNotes && (
-            <details className="group mt-6 border-t border-border pt-5">
+            <details className="print-notes group mt-6 border-t border-border pt-5">
               <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-foreground marker:hidden">
                 <Info className="h-4 w-4 text-primary" />
                 Why these changes?
