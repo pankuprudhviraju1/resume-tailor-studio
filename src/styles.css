@@ -62,40 +62,50 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --radius: 0.5rem;
+  --background: oklch(0.985 0.008 85);
+  --foreground: oklch(0.22 0.02 60);
+  --card: oklch(1 0.004 85);
+  --card-foreground: oklch(0.22 0.02 60);
+  --popover: oklch(1 0.004 85);
+  --popover-foreground: oklch(0.22 0.02 60);
+  --primary: oklch(0.31 0.055 160);
+  --primary-foreground: oklch(0.98 0.01 85);
+  --secondary: oklch(0.94 0.015 85);
+  --secondary-foreground: oklch(0.28 0.03 60);
+  --muted: oklch(0.945 0.012 85);
+  --muted-foreground: oklch(0.5 0.02 70);
+  --accent: oklch(0.78 0.14 72);
+  --accent-foreground: oklch(0.24 0.04 60);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.98 0.01 85);
+  --border: oklch(0.89 0.015 80);
+  --input: oklch(0.89 0.015 80);
+  --ring: oklch(0.31 0.055 160);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --sidebar: oklch(0.97 0.01 85);
+  --sidebar-foreground: oklch(0.22 0.02 60);
+  --sidebar-primary: oklch(0.31 0.055 160);
+  --sidebar-primary-foreground: oklch(0.98 0.01 85);
+  --sidebar-accent: oklch(0.94 0.015 85);
+  --sidebar-accent-foreground: oklch(0.28 0.03 60);
+  --sidebar-border: oklch(0.89 0.015 80);
+  --sidebar-ring: oklch(0.31 0.055 160);
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Work Sans", system-ui, sans-serif;
+  --gradient-hero: linear-gradient(
+    135deg,
+    oklch(0.31 0.055 160) 0%,
+    oklch(0.26 0.045 175) 55%,
+    oklch(0.34 0.07 145) 100%
+  );
+  --shadow-card: 0 1px 2px oklch(0.22 0.02 60 / 6%), 0 18px 40px -24px oklch(0.22 0.02 60 / 22%);
 }
+
 
 .dark {
   --background: oklch(0.129 0.042 264.695);
@@ -140,5 +150,84 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+}
+
+@theme inline {
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+  }
+}
+
+@utility bg-hero {
+  background-image: var(--gradient-hero);
+}
+
+@utility shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+/* Rendered resume typography */
+.resume-doc h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.resume-doc h2 {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.25rem;
+}
+.resume-doc h3 {
+  margin-top: 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.resume-doc p {
+  margin-top: 0.5rem;
+  line-height: 1.6;
+}
+.resume-doc ul {
+  margin-top: 0.5rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+.resume-doc li {
+  margin-top: 0.3rem;
+  line-height: 1.55;
+}
+.resume-doc hr {
+  margin: 1.75rem 0;
+  border-top: 1px dashed var(--color-border);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .resume-doc,
+  .resume-doc * {
+    visibility: visible;
+  }
+  .resume-doc {
+    position: absolute;
+    inset: 0;
+    padding: 0;
   }
 }
