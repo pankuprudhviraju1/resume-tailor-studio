@@ -82,21 +82,33 @@ export const tailorResume = createServerFn({ method: "POST" })
       });
     }
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": apiKey,
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3.8-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: blocks },
-        ],
-      }),
-    });
+    const callGateway = () =>
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Lovable-API-Key": apiKey,
+          "X-Lovable-AIG-SDK": "fetch",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3.8-flash",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: blocks },
+          ],
+        }),
+      });
+
+    let res = await callGateway();
+    // 429 and 5xx are transient: retry with bounded backoff before giving up.
+    for (let attempt = 1; attempt <= 3 && (res.status === 429 || res.status >= 500); attempt++) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 8000)
+        : attempt * 1500 + Math.random() * 500;
+      await new Promise((r) => setTimeout(r, waitMs));
+      res = await callGateway();
+    }
 
     if (!res.ok) {
       const detail = await res.text();
@@ -106,9 +118,13 @@ export const tailorResume = createServerFn({ method: "POST" })
       if (res.status === 402) {
         throw new Error("The AI credits for this app have run out. Please top them up.");
       }
+      if (res.status >= 500) {
+        throw new Error("The AI service is temporarily unavailable. Please try again in a moment.");
+      }
       console.error("AI gateway error", res.status, detail);
       throw new Error(`Could not generate the resume (error ${res.status}). ${detail.slice(0, 300)}`);
     }
+
 
     const json = (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
