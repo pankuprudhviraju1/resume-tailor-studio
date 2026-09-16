@@ -101,15 +101,16 @@ export const testEngine = createServerFn({ method: "POST" })
 /* ------------------------------------------------------------------ */
 
 const KeywordInput = z.object({
+  engine: EngineSchema,
   jobDescription: z.string().min(20, "Please paste a longer job description."),
 });
 
 export const extractKeywords = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => KeywordInput.parse(input))
   .handler(async ({ data }) => {
-    const { callAstra } = await import("./ai-gateway.server");
-    const keywords = await callAstra({
-      effort: "low",
+    const { callModel } = await import("./ai-provider.server");
+    const keywords = await callModel({
+      engine: data.engine,
       system: `You list the keywords an ATS and a human recruiter would scan a candidate's resume for, given one job description.
 Rules:
 - Include hard skills, tools, technologies, methodologies, domain terms, certifications and the exact job titles implied by the posting.
