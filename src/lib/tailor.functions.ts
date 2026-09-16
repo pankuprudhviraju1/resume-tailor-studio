@@ -137,3 +137,178 @@ export const tailorResume = createServerFn({ method: "POST" })
     }
     return { markdown: content };
   });
+
+/* ------------------------------------------------------------------ */
+/* Stage 1 — ATS keywords for the job role                            */
+/* ------------------------------------------------------------------ */
+
+const KeywordInput = z.object({
+  jobDescription: z.string().min(20, "Please paste a longer job description."),
+});
+
+export const extractKeywords = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => KeywordInput.parse(input))
+  .handler(async ({ data }) => {
+    const { callAstra } = await import("./ai-gateway.server");
+    const keywords = await callAstra({
+      effort: "low",
+      system: `You list the keywords an ATS and a human recruiter would scan a candidate's resume for, given one job description.
+Rules:
+- Include hard skills, tools, technologies, methodologies, domain terms, certifications and the exact job titles implied by the posting.
+- Use the posting's own wording. Include common variants and acronyms (e.g. "CI/CD", "continuous integration").
+- 30 to 60 keywords, ordered most important first.
+- Output ONE single paragraph of keywords separated by commas. No headings, no bullets, no numbering, no explanation, no trailing period.`,
+      input: `JOB DESCRIPTION:\n${data.jobDescription}\n\nGive the keywords now.`,
+    });
+
+    return {
+      keywords: keywords
+        .replace(/^[\s\S]*?:\s*/, (m) => (m.length < 40 ? "" : m))
+        .replace(/\s+/g, " ")
+        .replace(/\.\s*$/, "")
+        .trim(),
+    };
+  });
+
+/* ------------------------------------------------------------------ */
+/* Stage 2 — Single-column ATS LaTeX resume                           */
+/* ------------------------------------------------------------------ */
+
+const LatexInput = z.object({
+  jobDescription: z.string().min(20),
+  resumeSource: z.string().min(50),
+  keywords: z.string().default(""),
+  previousLatex: z.string().optional(),
+  improvements: z.array(z.string()).optional(),
+});
+
+const LATEX_SYSTEM = `You are an expert resume writer who produces compile-ready LaTeX resumes.
+
+Template requirements (non-negotiable):
+- Modern, single-column, reverse-chronological, ATS-optimised.
+- \\documentclass[11pt,a4paper]{article} and ONLY these packages: geometry, enumitem, titlesec, hyperref, xcolor.
+- No tables, tabular, multicol, minipage, graphics, icons, custom fonts or images. Plain text flow only, so parsers read it.
+- Section order: name + contact line, Professional Summary, Skills, Experience, Projects, Education, Certifications (omit a section only if the source has nothing for it).
+- Sections use plain \\section*{...} headings with the standard names above.
+- Experience entries newest first: company, job title, dates, then \\begin{itemize} bullets.
+- Must fit on ONE A4 page. Use \\geometry{margin=0.6in} and compact \\setlist spacing.
+- Escape LaTeX special characters (&, %, $, #, _) correctly.
+
+Content rules:
+- Never invent employers, degrees, certifications, dates or metrics.
+- Preserve EVERY role and EVERY project from the source. Compress wording instead of deleting anything valuable.
+- Weave in the supplied job keywords wherever the candidate's real experience supports them, using the job's vocabulary.
+- Strong action verbs, quantified outcomes where the source supports them.
+
+Output ONLY the LaTeX source. No markdown fences, no commentary before or after.`;
+
+function stripFences(text: string) {
+  return text
+    .replace(/^\s*```(?:latex|tex)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/, "")
+    .trim();
+}
+
+export const buildLatexResume = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => LatexInput.parse(input))
+  .handler(async ({ data }) => {
+    const { callAstra } = await import("./ai-gateway.server");
+
+    const revision =
+      data.previousLatex && data.improvements?.length
+        ? `\n\nPREVIOUS LATEX RESUME:\n${data.previousLatex}\n\nAPPLY THESE IMPROVEMENTS, keeping every role and project and staying on one page:\n${data.improvements
+            .map((item, i) => `${i + 1}. ${item}`)
+            .join("\n")}`
+        : "";
+
+    const latex = await callAstra({
+      effort: "medium",
+      system: LATEX_SYSTEM,
+      input: `JOB DESCRIPTION:\n${data.jobDescription}\n\nATS KEYWORDS TO COVER WHERE TRUTHFUL:\n${data.keywords}\n\nCANDIDATE RESUME SOURCE:\n${data.resumeSource}${revision}\n\nReturn the complete LaTeX resume now.`,
+    });
+
+    return { latex: stripFences(latex) };
+  });
+
+/* ------------------------------------------------------------------ */
+/* Stage 3 — Score the resume against the job                         */
+/* ------------------------------------------------------------------ */
+
+const ScoreInput = z.object({
+  jobDescription: z.string().min(20),
+  latex: z.string().min(50),
+  keywords: z.string().default(""),
+});
+
+const SCORE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    score: { type: "integer", description: "Overall match score out of 100" },
+    keyword_coverage: { type: "integer" },
+    relevance: { type: "integer" },
+    impact: { type: "integer" },
+    ats_clarity: { type: "integer" },
+    missing_keywords: { type: "array", items: { type: "string" } },
+    improvements: {
+      type: "array",
+      items: { type: "string" },
+      description: "Concrete, actionable rewrites. Each one must be applicable without inventing facts.",
+    },
+  },
+  required: [
+    "score",
+    "keyword_coverage",
+    "relevance",
+    "impact",
+    "ats_clarity",
+    "missing_keywords",
+    "improvements",
+  ],
+} as const;
+
+export const scoreResume = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ScoreInput.parse(input))
+  .handler(async ({ data }) => {
+    const { callAstra } = await import("./ai-gateway.server");
+
+    const raw = await callAstra({
+      effort: "low",
+      system: `You are a strict technical recruiter scoring one resume against one job description.
+Score out of 100 across keyword coverage (0-30), role relevance (0-30), demonstrated impact and metrics (0-20) and ATS-safe clarity and formatting (0-20); the overall score is their sum.
+Then list 3-7 specific improvements that could be applied WITHOUT inventing employers, degrees, dates or metrics. If the resume already covers something, do not ask for it again.
+Return JSON only.`,
+      input: `JOB DESCRIPTION:\n${data.jobDescription}\n\nTARGET ATS KEYWORDS:\n${data.keywords}\n\nRESUME (LaTeX source):\n${data.latex}\n\nScore it now.`,
+      jsonSchema: { name: "resume_score", schema: SCORE_SCHEMA as unknown as Record<string, unknown> },
+    });
+
+    let parsed: {
+      score?: number;
+      keyword_coverage?: number;
+      relevance?: number;
+      impact?: number;
+      ats_clarity?: number;
+      missing_keywords?: string[];
+      improvements?: string[];
+    };
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error("The AI returned an unreadable score. Please try again.");
+    }
+
+    const clamp = (value: unknown, max: number) =>
+      Math.max(0, Math.min(max, Math.round(Number(value) || 0)));
+
+    return {
+      score: clamp(parsed.score, 100),
+      breakdown: {
+        keywordCoverage: clamp(parsed.keyword_coverage, 30),
+        relevance: clamp(parsed.relevance, 30),
+        impact: clamp(parsed.impact, 20),
+        atsClarity: clamp(parsed.ats_clarity, 20),
+      },
+      missingKeywords: (parsed.missing_keywords ?? []).filter((k) => typeof k === "string").slice(0, 20),
+      improvements: (parsed.improvements ?? []).filter((i) => typeof i === "string").slice(0, 8),
+    };
+  });
