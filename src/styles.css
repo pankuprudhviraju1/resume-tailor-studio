@@ -217,6 +217,26 @@
   border-top: 1px dashed var(--color-border);
 }
 
+.tailoring-notes h2 {
+  margin-top: 1.25rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+.tailoring-notes h2:first-child {
+  margin-top: 0;
+}
+.tailoring-notes ul {
+  margin-top: 0.5rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+.tailoring-notes li {
+  margin-top: 0.4rem;
+  line-height: 1.55;
+}
+
 @media print {
   body * {
     visibility: hidden;
