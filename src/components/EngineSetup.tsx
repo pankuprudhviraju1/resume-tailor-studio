@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Loader2, Plug, Trash2 } from "lucide-react";
 
 import { testEngine, type EngineConfig } from "@/lib/tailor.functions";
+import { localRunner } from "@/lib/local-runner";
 import { DEFAULT_MODELS, isEngineReady } from "@/hooks/useEngine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
