@@ -92,6 +92,8 @@ function Home() {
   const getKeywords = useServerFn(extractKeywords);
   const getLatex = useServerFn(buildLatexResume);
   const getScore = useServerFn(scoreResume);
+  const { engine, save: saveEngine, clear: clearEngine } = useEngine();
+
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [jobDescription, setJobDescription] = useState("");
