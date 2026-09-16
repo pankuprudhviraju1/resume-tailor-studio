@@ -195,6 +195,7 @@ export const buildLatexResume = createServerFn({ method: "POST" })
 /* ------------------------------------------------------------------ */
 
 const ScoreInput = z.object({
+  engine: EngineSchema,
   jobDescription: z.string().min(20),
   latex: z.string().min(50),
   keywords: z.string().default(""),
