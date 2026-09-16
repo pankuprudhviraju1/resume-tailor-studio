@@ -1,29 +1,52 @@
-# Welcome to your Lovable project
+# Resume Tailor
 
-This project was built with [Lovable](https://lovable.dev).
+Upload your resume, paste a job description, and get a one-page, ATS-friendly tailored resume — plus the job's keywords, a LaTeX version, and a score out of 100 with improvements.
 
-## Build with Lovable
+It runs on **your** computer with **your** AI engine, so nobody else pays for your usage.
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+## Run it
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+You need [Node.js](https://nodejs.org) 20 or newer (or [Bun](https://bun.sh)).
 
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+```bash
+npm install
 npm run dev
 ```
 
-## Built with
+Then open http://localhost:8080
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+## Choose your AI engine (first panel on the page)
+
+Pick one of three options, click **Test & save**, and it is remembered in your browser only.
+
+**1. OpenAI key** — get a key at https://platform.openai.com/api-keys
+Suggested model: `gpt-4o-mini`
+
+**2. Gemini key** — get a free key at https://aistudio.google.com/apikey
+Suggested model: `gemini-2.0-flash`
+
+**3. Local & free (Ollama)** — no key, no internet, no cost.
+
+```bash
+# install from https://ollama.com, then:
+ollama pull llama3.1
+ollama serve
+```
+
+Suggested model: `llama3.1`. Address defaults to `http://localhost:11434`.
+With Ollama, paste your resume as **text** — local models can't read PDFs.
+
+## Privacy
+
+Your API key is stored only in your browser. Each request passes it straight through this app's local server to your chosen provider — it is never saved or logged anywhere. With Ollama nothing leaves your computer at all.
+
+## Getting a PDF
+
+Use the **Print / Save PDF** button on the result — the print layout is tuned to one clean A4 page. The LaTeX version can be compiled at https://overleaf.com or with `pdflatex`.
+
+## Build for production
+
+```bash
+npm run build
+npm run start
+```
