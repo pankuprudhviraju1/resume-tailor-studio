@@ -20,6 +20,12 @@ import {
   scoreResume,
 } from "@/lib/tailor.functions";
 import { localRunner } from "@/lib/local-runner";
+import type {
+  KeywordInputType,
+  LatexInputType,
+  ScoreInputType,
+  TailorInputType,
+} from "@/lib/stages";
 import { Markdown } from "@/components/Markdown";
 import { EngineSetup } from "@/components/EngineSetup";
 import { useEngine, isEngineReady } from "@/hooks/useEngine";
@@ -98,14 +104,14 @@ function Home() {
   // A local Ollama model only exists on the visitor's own machine, so those
   // requests run in the browser; hosted providers go through the server.
   const isLocal = engine?.provider === "ollama";
-  const tailor = (args: { data: Parameters<typeof tailorFn>[0]["data"] }) =>
-    isLocal ? localRunner.tailor(args.data) : tailorFn(args);
-  const getKeywords = (args: { data: Parameters<typeof keywordsFn>[0]["data"] }) =>
-    isLocal ? localRunner.keywords(args.data) : keywordsFn(args);
-  const getLatex = (args: { data: Parameters<typeof latexFn>[0]["data"] }) =>
-    isLocal ? localRunner.latex(args.data) : latexFn(args);
-  const getScore = (args: { data: Parameters<typeof scoreFn>[0]["data"] }) =>
-    isLocal ? localRunner.score(args.data) : scoreFn(args);
+  const tailor = (args: { data: TailorInputType }) =>
+    isLocal ? localRunner.tailor(args.data) : tailorFn({ data: args.data });
+  const getKeywords = (args: { data: KeywordInputType }) =>
+    isLocal ? localRunner.keywords(args.data) : keywordsFn({ data: args.data });
+  const getLatex = (args: { data: LatexInputType }) =>
+    isLocal ? localRunner.latex(args.data) : latexFn({ data: args.data });
+  const getScore = (args: { data: ScoreInputType }) =>
+    isLocal ? localRunner.score(args.data) : scoreFn({ data: args.data });
 
 
   const inputRef = useRef<HTMLInputElement>(null);
