@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Loader2, Plug, Trash2 } from "lucide-react";
 
 import { testEngine, type EngineConfig } from "@/lib/tailor.functions";
+import { localRunner } from "@/lib/local-runner";
 import { DEFAULT_MODELS, isEngineReady } from "@/hooks/useEngine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,11 @@ export function EngineSetup(props: {
     setStatus("testing");
     setMessage(null);
     try {
-      await runTest({ data: { engine: draft } });
+      if (draft.provider === "ollama") {
+        await localRunner.test(draft);
+      } else {
+        await runTest({ data: { engine: draft } });
+      }
       props.onSave(draft);
       setStatus("ok");
       setMessage("Connected. Your engine is saved in this browser only.");
