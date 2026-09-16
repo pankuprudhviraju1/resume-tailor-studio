@@ -36,6 +36,14 @@ ollama serve
 Suggested model: `llama3.1`. Address defaults to `http://localhost:11434`.
 With Ollama, paste your resume as **text** — local models can't read PDFs.
 
+Ollama only exists on your own machine, so the browser talks to it directly.
+That works out of the box when you run this app locally (the recommended way).
+If you use a hosted copy of the site instead, Ollama must be told to accept it:
+
+```bash
+OLLAMA_ORIGINS=* ollama serve
+```
+
 ## Privacy
 
 Your API key is stored only in your browser. Each request passes it straight through this app's local server to your chosen provider — it is never saved or logged anywhere. With Ollama nothing leaves your computer at all.

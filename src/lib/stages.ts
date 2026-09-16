@@ -15,6 +15,7 @@ export type EngineConfig = z.infer<typeof EngineSchema>;
 
 export type ResumeFile = { name: string; mimeType: string; base64: string };
 
+
 export const TailorInput = z.object({
   engine: EngineSchema,
   jobDescription: z.string().min(20, "Please paste a longer job description."),
