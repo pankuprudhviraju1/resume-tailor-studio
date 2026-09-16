@@ -243,16 +243,17 @@
     margin: 7mm 9mm;
   }
 
-  body * {
-    visibility: hidden;
+  main > header,
+  main > section:not(.print-result),
+  .print-result-actions,
+  .print-notes {
+    display: none;
   }
-  .resume-doc,
-  .resume-doc * {
-    visibility: visible;
+  .print-result {
+    max-width: none;
+    padding: 0;
   }
   .resume-doc {
-    position: absolute;
-    inset: 0;
     padding: 0;
     border: 0;
     box-shadow: none;
