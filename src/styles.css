@@ -238,6 +238,11 @@
 }
 
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 9mm 11mm;
+  }
+
   body * {
     visibility: hidden;
   }
@@ -249,5 +254,33 @@
     position: absolute;
     inset: 0;
     padding: 0;
+    border: 0;
+    box-shadow: none;
+    font-size: 9pt;
+    line-height: 1.25;
+  }
+  .resume-doc h1 {
+    font-size: 18pt;
+    line-height: 1.1;
+  }
+  .resume-doc h2 {
+    margin-top: 8pt;
+    padding-bottom: 2pt;
+    font-size: 8pt;
+  }
+  .resume-doc h3 {
+    margin-top: 5pt;
+    font-size: 9.5pt;
+  }
+  .resume-doc p,
+  .resume-doc ul {
+    margin-top: 3pt;
+  }
+  .resume-doc li {
+    margin-top: 1.5pt;
+    line-height: 1.25;
+  }
+  .resume-doc hr {
+    margin: 7pt 0;
   }
 }
