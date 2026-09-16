@@ -343,10 +343,10 @@ function Home() {
               <div className="mt-3 flex flex-wrap items-end gap-6 border-2 border-border bg-card p-5">
                 <p className="font-display text-6xl leading-none">{latest.score}<span className="text-2xl">/100</span></p>
                 <ul className="font-body text-xs uppercase tracking-[0.1em]">
-                  <li>Keywords {latest.breakdown.keywordCoverage}/30</li>
-                  <li>Relevance {latest.breakdown.relevance}/30</li>
-                  <li>Impact {latest.breakdown.impact}/20</li>
-                  <li>ATS clarity {latest.breakdown.atsClarity}/20</li>
+                  <li>Keywords {latest.breakdown.keywordCoverage}%</li>
+                  <li>Relevance {latest.breakdown.relevance}%</li>
+                  <li>Impact {latest.breakdown.impact}%</li>
+                  <li>ATS clarity {latest.breakdown.atsClarity}%</li>
                 </ul>
                 {rounds.length > 1 && (
                   <p className="ml-auto font-body text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
